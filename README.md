@@ -3,3 +3,4 @@ Split the Screen into two halfs, Matlab's command window on one side and the plo
 window and see the network change as per your input.
 2) Any broken links (with infinity edge weight) can be repaired using choice 1 and giving any path cost of your choice.
 3) While adding Router name, just add the router number, for eg: for router 7, input 7 and not R7
+4) Keep the Progress/customDijkstraPQ file in the same folder as the Progress/DijkstraSimMain file
