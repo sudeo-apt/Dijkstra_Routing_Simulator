@@ -83,8 +83,8 @@ while true
     disp('Choose an action to test network resilience:');
     disp('1. Simulate Traffic Congestion (Increase Link Cost)');
     disp('2. Simulate Link Failure (Break a Link)');
-    disp('3. Change Source and Destination Nodes'); % NEW FEATURE
-    disp('4. Simulate Node Failure (Crash Router)');  % NEW FEATURE
+    disp('3. Change Source and Destination Nodes'); 
+    disp('4. Simulate Node Failure (Crash Router)');  
     disp('0. Exit Simulation');
     
     choice = input('Enter your choice (0/1/2/3/4): ');
@@ -94,16 +94,16 @@ while true
         break;
     end
     
-    % ==========================================================
-    % ORIGINAL FEATURES (1 & 2) - Untouched logic
-    % ==========================================================
+    % Options 1 and 2: Modifying a specific link
     if choice == 1 || choice == 2
         disp(' ');
         
-        nodeA = input('Enter the first router of the link (Node A, 1-10): ');
-        nodeB = input('Enter the second router of the link (Node B, 1-10): ');
+        % DYNAMIC PROMPT: Now shows the actual number of nodes
+        nodeA = input(['Enter the first router of the link (Node A, 1-', num2str(numNodes), '): ']);
+        nodeB = input(['Enter the second router of the link (Node B, 1-', num2str(numNodes), '): ']);
         
-        if nodeA < 1 || nodeA > 10 || nodeB < 1 || nodeB > 10 || nodeA == nodeB
+        % DYNAMIC VALIDATION: Checks against numNodes instead of 10
+        if nodeA < 1 || nodeA > numNodes || nodeB < 1 || nodeB > numNodes || nodeA == nodeB
             disp('ERROR: Invalid routers entered. Please try again.');
             continue; 
         end
@@ -123,14 +123,13 @@ while true
             newWeight = inf; 
             statusMsg = 'CRITICAL LINK FAILURE';
             lineStyle = '--';
-            edgeLabel = 'Inf'; % Your requested fix is here
+            edgeLabel = 'Inf'; 
         end
         
         disp(['Processing: ', statusMsg, ' on link R', num2str(nodeA), '-R', num2str(nodeB), '...']);
         
         costMatrix(nodeA, nodeB) = newWeight;
         costMatrix(nodeB, nodeA) = newWeight;
-        
         G.Edges.Weight(edgeIdx) = newWeight;
         
         tic; 
@@ -141,13 +140,12 @@ while true
         p.EdgeColor = [0 0.4470 0.7410];
         p.LineWidth = 1;
         p.LineStyle = '-';
-        
         labeledge(p, edgeIdx, edgeLabel);
         highlight(p, nodeA, nodeB, 'EdgeColor', 'r', 'LineWidth', 4, 'LineStyle', lineStyle);
         
         if isempty(newPath) || newCost == inf
             disp('NETWORK ISOLATED: No alternate paths available to the destination.');
-            title('Phase 4: Network Failure. Destination Unreachable.');
+            title('Network Failure. Destination Unreachable.');
         else
             highlight(p, newPath, 'EdgeColor', 'g', 'LineWidth', 3);
             title([statusMsg, ' - Self-Healed. Path Cost: ', num2str(newCost)]);
@@ -156,7 +154,6 @@ while true
             disp(['New optimal path: ', num2str(newPath)]);
             disp(['New total path cost: ', num2str(newCost)]);
             
-            % NEW FEATURE: Bottleneck calculation added to original printout
             pathBWs = [];
             for i = 1:(length(newPath)-1)
                 pathBWs = [pathBWs, bwMatrix(newPath(i), newPath(i+1))];
@@ -166,20 +163,23 @@ while true
         end
         drawnow; 
         
-    % ==========================================================
-    % NEW FEATURE 3: Change Source and Destination
-    % ==========================================================
+    % Option 3: User wants to test a different start/end pair
     elseif choice == 3
         disp(' ');
-        sourceNode = input('Enter new Source Node (1-10): ');
-        destNode = input('Enter new Destination Node (1-10): ');
+        sourceNode = input(['Enter new Source Node (1-', num2str(numNodes), '): ']);
+        destNode = input(['Enter new Destination Node (1-', num2str(numNodes), '): ']);
+        
+        % Validate Option 3 inputs
+        if sourceNode < 1 || sourceNode > numNodes || destNode < 1 || destNode > numNodes
+            disp('ERROR: Invalid routers entered. Please try again.');
+            continue;
+        end
         
         tic;
         [newPath, newCost] = customDijkstraPQ(costMatrix, sourceNode, destNode);
         elapsedTime = toc;
         convergenceTimeMs = elapsedTime * 1000;
         
-        % Reset plot lines
         p.EdgeColor = [0 0.4470 0.7410]; p.LineWidth = 1; p.LineStyle = '-';
         
         if isempty(newPath) || newCost == inf
@@ -194,51 +194,47 @@ while true
         end
         drawnow;
         
-   % ==========================================================
-    % NEW FEATURE 4: Node Failure (Router Crash)
-    % ==========================================================
+    % Option 4: Full router hardware crash
     elseif choice == 4
         disp(' ');
-        fNode = input('Enter Router to CRASH (1-10): ');
+        fNode = input(['Enter Router to CRASH (1-', num2str(numNodes), '): ']);
         
-        % Set all connected links to infinite in the math matrix
+        if fNode < 1 || fNode > numNodes
+            disp('ERROR: Invalid router entered. Please try again.');
+            continue;
+        end
+        
         costMatrix(fNode, :) = inf; 
         costMatrix(:, fNode) = inf;
         
-        % Safely update Marker Size
+        % DYNAMIC ARRAY SIZING: Uses numNodes instead of 10
         currentSizes = p.MarkerSize;
         if isscalar(currentSizes)
-            currentSizes = repmat(currentSizes, [1, 10]);
+            currentSizes = repmat(currentSizes, [1, numNodes]);
         end
-        currentSizes(fNode) = 15;
+        currentSizes(fNode) = 15; 
         p.MarkerSize = currentSizes;
         
-        % Safely update Node Color
         newColors = p.NodeColor;
         if size(newColors, 1) == 1
-            newColors = repmat(newColors, [10, 1]);
+            newColors = repmat(newColors, [numNodes, 1]);
         end
-        newColors(fNode, :) = [1 0 0]; % Red
+        newColors(fNode, :) = [1 0 0]; 
         p.NodeColor = newColors;
         
-        % --- THE FIX IS HERE ---
-        % Remove the crashed node's edges visually (undirected graph only needs outedges)
         edgesToHide = outedges(G, fNode); 
-        
         G.Edges.Weight(edgesToHide) = inf;
         highlight(p, 'Edges', edgesToHide, 'EdgeColor', 'r', 'LineStyle', '--');
         
         disp(['SYSTEM ALERT: Router R', num2str(fNode), ' has crashed.']);
         
-        % Recalculate
         tic;
         [newPath, newCost] = customDijkstraPQ(costMatrix, sourceNode, destNode);
         elapsedTime = toc;
         convergenceTimeMs = elapsedTime * 1000;
         
-        % Reset healthy edges to default blue
         p.EdgeColor = [0 0.4470 0.7410];
-        highlight(p, 'Edges', edgesToHide, 'EdgeColor', 'r', 'LineStyle', '--'); % Keep failed red
+        highlight(p, 'Edges', edgesToHide, 'EdgeColor', 'r', 'LineStyle', '--'); 
         
         if isempty(newPath) || newCost == inf
             disp('NETWORK ISOLATED: Destination Unreachable.');
@@ -249,7 +245,6 @@ while true
             disp('Success! Traffic Diverted around crashed node.');
             disp(['New optimal path: ', num2str(newPath)]);
             
-            % Bottleneck calculation
             pathBWs = [];
             for i = 1:(length(newPath)-1)
                 pathBWs = [pathBWs, bwMatrix(newPath(i), newPath(i+1))];
