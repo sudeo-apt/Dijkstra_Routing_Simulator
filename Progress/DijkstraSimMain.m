@@ -1,32 +1,61 @@
-% PHASE 1: Build the Static Network (The Map)
-costMatrix = [
-     0,  15,   0,   0,  20,   0,   0,   0,   0,  50; 
-    15,   0,  10,   0,   0,  25,   0,   0,   0,   0; 
-     0,  10,   0,  12,   0,   0,  30,   0,   0,   0; 
-     0,   0,  12,   0,  18,   0,   0,  15,   0,   0; 
-    20,   0,   0,  18,   0,  10,   0,   0,  40,   0; 
-     0,  25,   0,   0,  10,   0,  14,   0,   0,   0; 
-     0,   0,  30,   0,   0,  14,   0,   8,   0,  22; 
-     0,   0,   0,  15,   0,   0,   8,   0,  16,   0; 
-     0,   0,   0,   0,  40,   0,   0,  16,   0,  10; 
-    50,   0,   0,   0,   0,   0,  22,   0,  10,   0  
-];
+clc;
+close all;
+clear all;
+% PHASE 1: Dynamic Random Network Generator
+% ==========================================================
+disp('--- NETWORK INITIALIZATION ---');
+numNodes = input('Enter the number of routers for the simulation (e.g., 10, 25, 50): ');
 
-% --- NEW FEATURE: Bandwidth Matrix for Throughput ---
-bwMatrix = (costMatrix > 0) .* 100; 
-bwMatrix(bwMatrix == 0) = 0;
-bwMatrix(1,10) = 10; bwMatrix(10,1) = 10; % Example of a slow link
+% 1. Initialize empty matrices
+costMatrix = zeros(numNodes);
+bwMatrix = zeros(numNodes);
 
+% 2. Guarantee a base connection (Spanning Tree / Line) so the graph is never broken
+for i = 1:(numNodes-1)
+    w = randi([10, 50]); % Random cost between 10 and 50
+    costMatrix(i, i+1) = w;
+    costMatrix(i+1, i) = w;
+    
+    % Random bandwidth for baseline: 50 or 100 Mbps
+    bw = 50 * randi([1,2]); 
+    bwMatrix(i, i+1) = bw; bwMatrix(i+1, i) = bw;
+end
+
+% 3. Add random cross-links (The "Mesh" effect)
+for i = 1:numNodes
+    for j = (i+2):numNodes % Skip adjacent nodes
+        if rand() < 0.3 % 30% chance of a random link existing
+            w = randi([15, 100]); % Random high cost
+            costMatrix(i, j) = w;
+            costMatrix(j, i) = w;
+            
+            % Random bandwidth: 10, 50, or 100 Mbps
+            bw_opts = [10, 50, 100];
+            bw = bw_opts(randi(3));
+            bwMatrix(i, j) = bw; bwMatrix(j, i) = bw;
+        end
+    end
+end
+
+% 4. Create the Graph Object
 G = graph(costMatrix); 
 figure('Name', 'Smart Routing Dashboard', 'NumberTitle', 'off'); 
 
-p = plot(G, 'Layout', 'force', 'NodeLabel', {'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10'});
+% Generate dynamic node labels (R1, R2, ..., Rn)
+nodeNames = arrayfun(@(x) sprintf('R%d', x), 1:numNodes, 'UniformOutput', false);
+
+% Plot with force layout (MATLAB automatically spaces them out nicely)
+p = plot(G, 'Layout', 'force', 'NodeLabel', nodeNames);
 p.MarkerSize = 8;
 p.NodeColor = 'b'; 
-title('Phase 1: 10-Node Network Topology');
+title(['Phase 1: ', num2str(numNodes), '-Node Randomized Network Topology']);
 
 labeledge(p, 1:numedges(G), G.Edges.Weight);
-disp('Phase 1 Complete: Network plotted successfully.');
+disp('Phase 1 Complete: Randomized Network generated successfully.');
+
+% Set default routing from Node 1 to the Last Node
+sourceNode = 1;
+destNode = numNodes;
 
 % PHASE 2: Implement Static Routing
 sourceNode = 1;
