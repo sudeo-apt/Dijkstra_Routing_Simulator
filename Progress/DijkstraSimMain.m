@@ -4,7 +4,7 @@ clear all;
 % PHASE 1: Dynamic Random Network Generator
 % ==========================================================
 disp('--- NETWORK INITIALIZATION ---');
-numNodes = input('Enter the number of routers for the simulation (e.g., 10, 25, 50): ');
+numNodes = input('Enter the number of routers for the simulation : ');
 
 % 1. Initialize empty matrices
 costMatrix = zeros(numNodes);
