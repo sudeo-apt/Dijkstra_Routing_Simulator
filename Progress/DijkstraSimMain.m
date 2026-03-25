@@ -2,7 +2,6 @@ clc;
 close all;
 clear all;
 % PHASE 1: Dynamic Random Network Generator
-% ==========================================================
 disp('--- NETWORK INITIALIZATION ---');
 numNodes = input('Enter the number of routers for the simulation : ');
 
@@ -73,9 +72,9 @@ disp('Phase 2 Complete: Optimal path calculated and highlighted.');
 
 % PHASE 3 & 4: Interactive Dynamic Routing and Self-Healing
 disp(' ');
-disp('==================================================');
+
 disp('   INTERACTIVE NETWORK SIMULATION INITIALIZED');
-disp('==================================================');
+
 
 while true
     disp(' ');
